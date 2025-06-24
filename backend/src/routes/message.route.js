@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.get("/users", protectRoute, getUsersForSidebar);
 router.get("/messages/:conversationId", getMessages); 
-router.get("/chat/:id", protectRoute, getMessages);
+router.get("/:id", protectRoute, getMessages);
 router.post("/send/:id", protectRoute, sendMessage);
 
 

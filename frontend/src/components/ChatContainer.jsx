@@ -1,39 +1,62 @@
-import React from 'react'
-import { useChatStore } from '../store/useChatStore'
+import React, { useState, useEffect, useRef } from "react";
+import { useChatStore } from "../store/useChatStore";
 import ChatHeader from "../components/ChatHeader";
-import MessageInput from '../components/MessageInput';
-import {useState,useEffect,useRef} from "react";
-import MessageSkeleton from './skeletons/MessageSkeleton';
-import {useAuthStore} from "../store/useAuthStore";
-import { formatMessageTime } from '../lib/utils';
+import MessageInput from "../components/MessageInput";
+import MessageSkeleton from "./skeletons/MessageSkeleton";
+import { useAuthStore } from "../store/useAuthStore";
+import { formatMessageTime } from "../lib/utils";
+
 const ChatContainer = () => {
-const {messages , getMessages , isMessagesLoading , selectedUser , subscribeToMessages , unsubscribeFromMessages }=useChatStore()
-const { authUser} = useAuthStore();
-const messageEndRef = useRef(null);
-useEffect(()=>{
-  getMessages(selectedUser._id);
-  subscribeToMessages();
+  const {
+    messages,
+    getMessages,
+    isMessagesLoading,
+    selectedUser,
+    subscribeToMessages,
+    unsubscribeFromMessages,
+  } = useChatStore();
 
-  return () => unsubscribeFromMessages();
-},[selectedUser._id, getMessages,subscribeToMessages,unsubscribeFromMessages]);
-useEffect(()=> {
-  if(messageEndRef.current && messages){
-  messageEndRef.current.scrollIntoView({behavior:"smooth"})
+  const { authUser } = useAuthStore();
+  const messageEndRef = useRef(null);
+
+  useEffect(() => {
+    if (!selectedUser?._id) return; // ✅ Prevent fetch with undefined ID
+
+    getMessages(selectedUser._id);
+    subscribeToMessages();
+
+    return () => unsubscribeFromMessages();
+  }, [selectedUser?._id]);
+
+  useEffect(() => {
+    if (messageEndRef.current && messages) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  if (isMessagesLoading) {
+    return (
+      <div className="flex-1 flex flex-col overflow-auto">
+        <ChatHeader />
+        <div className="p-4">
+          <p className="text-zinc-400">Loading messages...</p>
+          <MessageSkeleton />
+        </div>
+        <MessageInput />
+      </div>
+    );
   }
-},[messages]);
 
-if(isMessagesLoading){
+  // Show placeholder if no user is selected
+  if (!selectedUser?._id) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-zinc-400">
+        <p className="text-lg">Select a user to start chatting</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 flesx flesx-col overflow -auto">
-      
-      <ChatHeader/>
-      <p>Messages...</p>
-
-      <MessageInput />
-    </div>
-  );
-} 
- return (
     <div className="flex-1 flex flex-col overflow-auto">
       <ChatHeader />
 
@@ -44,7 +67,7 @@ if(isMessagesLoading){
             className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
             ref={messageEndRef}
           >
-            <div className=" chat-image avatar">
+            <div className="chat-image avatar">
               <div className="size-10 rounded-full border">
                 <img
                   src={
@@ -56,12 +79,14 @@ if(isMessagesLoading){
                 />
               </div>
             </div>
+
             <div className="chat-header mb-1">
               <time className="text-xs opacity-50 ml-1">
                 {formatMessageTime(message.createdAt)}
               </time>
             </div>
-             <div className="chat-bubble flex flex-col">
+
+            <div className="chat-bubble flex flex-col">
               {message.image && (
                 <img
                   src={message.image}
@@ -71,18 +96,13 @@ if(isMessagesLoading){
               )}
               {message.text && <p>{message.text}</p>}
             </div>
-            
-            </div>
-          
+          </div>
         ))}
       </div>
 
       <MessageInput />
     </div>
-  )
- 
- 
-  
-}
+  );
+};
 
 export default ChatContainer;
